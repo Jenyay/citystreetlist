@@ -3,3 +3,7 @@ name = "citystreetlist"
 version = "0.0.1"
 authors = ["Eugene Ilin (aka Jenyay) <jenyay.ilin@gmail.com>"]
 build = "build.rs"
+
+[dependencies.hyper]
+version = "0.7.2"
+default-features = false
