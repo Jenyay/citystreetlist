@@ -1,3 +1,8 @@
+extern crate citystreetlist;
+
+use citystreetlist::mosdata;
+
 fn main () {
-    println! ("Hello world!")
+    let version = mosdata::get_version();
+    println! ("{}", version);
 }
