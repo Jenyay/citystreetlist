@@ -6,6 +6,7 @@ build = "build.rs"
 
 [dependencies]
 tempfile = "2.0.1"
+zip = "0.1.15"
 
 [dependencies.hyper]
 version = "0.7.2"
