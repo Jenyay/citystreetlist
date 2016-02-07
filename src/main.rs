@@ -3,6 +3,8 @@ extern crate citystreetlist;
 use citystreetlist::mosdata;
 
 fn main () {
-    let version = mosdata::get_version();
-    println! ("{}", version);
+    match mosdata::get_version() {
+        Err(e) => println!("{:?}", e),
+        Ok (res) => println!("{:?}", res),
+    }
 }
