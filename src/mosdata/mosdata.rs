@@ -3,7 +3,9 @@ extern crate tempfile;
 extern crate zip;
 
 use std::io;
+use std::io::BufReader;
 use std::io::Read;
+use std::io::BufRead;
 
 use self::hyper::Client;
 use self::hyper::header::Connection;
@@ -29,9 +31,16 @@ pub fn download_areas () -> Result<String, error::DownloadError> {
     assert_eq! (zip.len(), 1);
 
     // Extract data
-    let mut areas = String::new();
-    let mut file = try! (zip.by_index (0).map_err (error::DownloadError::Zip));
-    try! (file.read_to_string (&mut areas).map_err (error::DownloadError::Io));
+    let file = try! (zip.by_index (0).map_err (error::DownloadError::Zip));
+    let mut file_buffer = BufReader::new (file);
 
-    Ok (areas)
+    loop {
+        let mut area = String::new();
+        match file_buffer.read_line(&mut area) {
+            Ok (0) | Err(_) => break,
+            Ok (_) => println! ("{}", area.trim()),
+        }
+    }
+
+    Ok ("areas".to_string())
 }
