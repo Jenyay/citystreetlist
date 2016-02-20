@@ -5,11 +5,10 @@ use citystreetlist::mosdata::error;
 
 fn process_error (err: error::DownloadError) {
     match err {
-        error::DownloadError::HttpError (_) => println!("Can't download data"),
+        error::DownloadError::HttpError (_) => println!("Ошибка скачивания"),
         error::DownloadError::Io (e) => println!("{:?}", e),
-        error::DownloadError::Zip (_) => println!("Can't extract data from zip archive"),
-        error::DownloadError::Parse (_) => println!("Integer parsing error"),
-        error::DownloadError::FormatError => println!("Format Error"),
+        error::DownloadError::Zip (_) => println!("Ошибка извлечения данных из zip-аррхива"),
+        error::DownloadError::FormatError => println!("Ошибка формата данных"),
     }
 }
 
@@ -22,10 +21,10 @@ fn print_areas (areas: Vec<mosdata::mosdata::AreaInfo>) {
 
 
 fn main () {
-    print! ("Areas downloading... ");
+    print! ("Скачивание списка районов... ");
     match mosdata::download_areas() {
         Err(e) => {
-            println! ("Fail");
+            println! ("Ошибка!");
             process_error(e)
         },
         Ok (areas) => {

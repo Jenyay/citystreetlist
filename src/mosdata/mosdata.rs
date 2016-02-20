@@ -1,5 +1,4 @@
 extern crate hyper;
-extern crate tempfile;
 extern crate zip;
 
 use std::io;
@@ -11,6 +10,7 @@ use self::hyper::Client;
 use self::hyper::header::Connection;
 
 use mosdata::error;
+use mosdata::defines;
 
 #[derive(Debug)]
 pub struct AreaInfo {
@@ -47,8 +47,7 @@ fn get_zip_archive<'a> (url: &str) -> Result<zip::read::ZipArchive<io::Cursor<Ve
 
 
 pub fn download_areas () -> Result<Vec<AreaInfo>, error::DownloadError> {
-    const URL: &'static str = "http://data.mos.ru/opendata/export/2039/csv";
-    let mut zip_archive = try! (get_zip_archive (URL));
+    let mut zip_archive = try! (get_zip_archive (defines::AREAS_URL));
 
     // Archive must contain single file only
     assert_eq! (zip_archive.len(), 1);
@@ -88,10 +87,7 @@ pub fn download_areas () -> Result<Vec<AreaInfo>, error::DownloadError> {
 fn from_end_to_start (name: &str, substring: &str) -> String {
     if name.ends_with(substring) {
         let right = name[..name.len() - substring.len()].trim();
-        let mut result = String::from(substring);
-        result.push_str(" ");
-        result.push_str(right);
-        result
+        format! ("{} {}", substring, right)
     }
     else {
         name.to_string()
@@ -126,15 +122,15 @@ fn parse_area_info (line: String) -> Result<AreaInfo, error::DownloadError> {
         return Err (error::DownloadError::FormatError);
     }
 
-    let type_name = get_type_name (try! (items[4].parse::<u32>().map_err (error::DownloadError::Parse)));
+    let type_name = get_type_name (try! (items[4].parse::<u32>().map_err (|_| error::DownloadError::FormatError)));
 
     let area_info = AreaInfo {
         name: sanitize_name (items[2].to_string()),
-        id: try! (items[1].parse::<u32>().map_err (error::DownloadError::Parse)),
+        id: try! (items[1].parse::<u32>().map_err (|_| error::DownloadError::FormatError)),
         name_translate: items[3].to_string(),
         type_name: type_name,
-        id_okato: try! (items[5].parse::<u32>().map_err (error::DownloadError::Parse)),
-        id_global: try! (items[5].parse::<u32>().map_err (error::DownloadError::Parse)),
+        id_okato: try! (items[5].parse::<u32>().map_err (|_| error::DownloadError::FormatError)),
+        id_global: try! (items[5].parse::<u32>().map_err (|_| error::DownloadError::FormatError)),
     };
 
     Ok(area_info)
