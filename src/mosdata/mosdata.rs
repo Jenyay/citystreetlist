@@ -22,6 +22,17 @@ pub struct AreaInfo {
     pub id_global: u32,
 }
 
+#[derive(Debug)]
+pub struct StreetInfo {
+    pub name: String,
+    pub areas: Vec<u32>,
+    pub name_short: String,
+    pub name_translate: String,
+    pub type_id: u32,
+    pub kladr: String,
+    pub id: u32,
+}
+
 
 #[derive(Debug)]
 pub enum AreaType {

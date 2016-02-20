@@ -62,4 +62,7 @@ fn main () {
             },
         }
     }
+    else {
+        print_usage(&program, opts);
+    }
 }
