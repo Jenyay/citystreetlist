@@ -4,7 +4,6 @@ extern crate hyper;
 extern crate zip;
 
 use std::io;
-use self::core::num;
 
 
 #[derive(Debug)]

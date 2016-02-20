@@ -15,6 +15,6 @@ fn process_error (err: error::DownloadError) {
 fn main () {
     match mosdata::download_areas() {
         Err(e) => process_error(e),
-        Ok (res) => {},
+        Ok (_) => {},
     }
 }
