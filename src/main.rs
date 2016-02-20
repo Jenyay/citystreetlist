@@ -12,7 +12,7 @@ fn process_error (err: error::DownloadError) {
     match err {
         error::DownloadError::HttpError (_) => println!("Ошибка скачивания"),
         error::DownloadError::Io (e) => println!("{:?}", e),
-        error::DownloadError::Zip (_) => println!("Ошибка извлечения данных из zip-аррхива"),
+        error::DownloadError::Zip (_) => println!("Ошибка извлечения данных из zip-архива"),
         error::DownloadError::FormatError => println!("Ошибка формата данных"),
     }
 }
@@ -24,10 +24,12 @@ fn print_areas (areas: Vec<mosdata::mosdata::AreaInfo>) {
     }
 }
 
+
 fn print_usage (program: &str, opts: Options) {
     let brief = format!("Использование: {} [параметры]", program);
     print!("{}", opts.usage(&brief));
 }
+
 
 fn main () {
     let args: Vec<String> = env::args().collect();
@@ -60,5 +62,4 @@ fn main () {
             },
         }
     }
-
 }

@@ -32,6 +32,7 @@ pub enum AreaType {
 }
 
 
+/// Download zip archive and return ZipArchive with it
 fn get_zip_archive<'a> (url: &str) -> Result<zip::read::ZipArchive<io::Cursor<Vec<u8>>>, error::DownloadError> {
     // Download zip file with areas
     let client = Client::new();
@@ -46,6 +47,7 @@ fn get_zip_archive<'a> (url: &str) -> Result<zip::read::ZipArchive<io::Cursor<Ve
 }
 
 
+/// Download and extract areas list from data.mos.ru
 pub fn download_areas () -> Result<Vec<AreaInfo>, error::DownloadError> {
     let mut zip_archive = try! (get_zip_archive (defines::AREAS_URL));
 
@@ -84,6 +86,7 @@ pub fn download_areas () -> Result<Vec<AreaInfo>, error::DownloadError> {
 }
 
 
+/// Move substring from end to start of the string (name)
 fn from_end_to_start (name: &str, substring: &str) -> String {
     if name.ends_with(substring) {
         let right = name[..name.len() - substring.len()].trim();
@@ -104,6 +107,7 @@ fn sanitize_name (name: String) -> String {
 }
 
 
+/// Convert area type id to AreaType
 fn get_type_name (type_id: u32) -> AreaType {
     match type_id {
         2 => AreaType::Okrug,
@@ -114,6 +118,7 @@ fn get_type_name (type_id: u32) -> AreaType {
 }
 
 
+/// Create AreaInfo from csv string
 fn parse_area_info (line: String) -> Result<AreaInfo, error::DownloadError> {
     let items: Vec<&str> = line.split(';').collect();
     let items: Vec<&str> = items.iter().map(|item| item.trim_matches ('"')).collect();
