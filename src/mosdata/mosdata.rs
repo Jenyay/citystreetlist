@@ -14,12 +14,21 @@ use mosdata::error;
 
 #[derive(Debug)]
 pub struct AreaInfo {
-    name: String,
-    id: u32,
-    name_translate: String,
-    id_type: u32,
-    id_okato: u32,
-    id_global: u32,
+    pub name: String,
+    pub id: u32,
+    pub name_translate: String,
+    pub type_name: AreaType,
+    pub id_okato: u32,
+    pub id_global: u32,
+}
+
+
+#[derive(Debug)]
+pub enum AreaType {
+    Raion,
+    Okrug,
+    Poselenie,
+    Unknown,
 }
 
 
@@ -70,20 +79,60 @@ pub fn download_areas () -> Result<Vec<AreaInfo>, error::DownloadError> {
             },
         }
     }
+
+    areas.sort_by (|a, b| a.name.cmp (&b.name));
     Ok (areas)
+}
+
+
+fn from_end_to_start (name: &str, substring: &str) -> String {
+    if name.ends_with(substring) {
+        let right = name[..name.len() - substring.len()].trim();
+        let mut result = String::from(substring);
+        result.push_str(" ");
+        result.push_str(right);
+        result
+    }
+    else {
+        name.to_string()
+    }
+}
+
+
+fn sanitize_name (name: String) -> String {
+    let mut result = from_end_to_start (&name, "район");
+    result = from_end_to_start (&result, "округ");
+    result = from_end_to_start (&result, "поселение");
+
+    result
+}
+
+
+fn get_type_name (type_id: u32) -> AreaType {
+    match type_id {
+        2 => AreaType::Okrug,
+        3 => AreaType::Raion,
+        4 => AreaType::Poselenie,
+        _ => AreaType::Unknown,
+    }
 }
 
 
 fn parse_area_info (line: String) -> Result<AreaInfo, error::DownloadError> {
     let items: Vec<&str> = line.split(';').collect();
     let items: Vec<&str> = items.iter().map(|item| item.trim_matches ('"')).collect();
-    assert_eq! (items.len(), 8);
+
+    if items.len() != 8 {
+        return Err (error::DownloadError::FormatError);
+    }
+
+    let type_name = get_type_name (try! (items[4].parse::<u32>().map_err (error::DownloadError::Parse)));
 
     let area_info = AreaInfo {
-        name: items[2].to_string(),
+        name: sanitize_name (items[2].to_string()),
         id: try! (items[1].parse::<u32>().map_err (error::DownloadError::Parse)),
         name_translate: items[3].to_string(),
-        id_type: try! (items[4].parse::<u32>().map_err (error::DownloadError::Parse)),
+        type_name: type_name,
         id_okato: try! (items[5].parse::<u32>().map_err (error::DownloadError::Parse)),
         id_global: try! (items[5].parse::<u32>().map_err (error::DownloadError::Parse)),
     };
