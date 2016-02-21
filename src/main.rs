@@ -20,7 +20,7 @@ fn process_error (err: error::DownloadError) {
 
 fn print_areas (areas: Vec<mosdata::mosdata::AreaInfo>) {
     for area in areas {
-        println! ("{}", area.name);
+        println! ("{} {}", area.type_name, area.name);
     }
 }
 
