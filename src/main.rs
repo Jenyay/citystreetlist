@@ -2,6 +2,8 @@ extern crate getopts;
 extern crate citystreetlist;
 
 use std::env;
+use std::io::stdout;
+use std::io::Write;
 
 use getopts::Options;
 
@@ -21,6 +23,21 @@ fn process_error (err: error::DownloadError) {
 fn print_areas (areas: Vec<mosdata::AreaInfo>) {
     for area in areas {
         println! ("{} {}", area.type_name, area.name);
+    }
+}
+
+fn download_and_print_areas () {
+    print! ("Скачивание списка районов... ");
+    let _ = stdout().flush();
+    match mosdata::download_areas() {
+        Err(e) => {
+            println! ("Ошибка!");
+            process_error(e);
+        },
+        Ok (areas) => {
+            println! ("OK");
+            print_areas (areas);
+        },
     }
 }
 
@@ -50,19 +67,11 @@ fn main () {
         return;
     }
     else if matches.opt_present("a") {
-        print! ("Скачивание списка районов... ");
-        match mosdata::download_areas() {
-            Err(e) => {
-                println! ("Ошибка!");
-                process_error(e);
-            },
-            Ok (areas) => {
-                println! ("OK");
-                print_areas (areas);
-            },
-        }
+        download_and_print_areas();
+        return;
     }
     else {
         print_usage(&program, opts);
+        return;
     }
 }
