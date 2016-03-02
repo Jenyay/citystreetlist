@@ -1,5 +1,6 @@
 extern crate hyper;
 extern crate zip;
+extern crate csv;
 
 use std::io;
 use std::io::BufReader;
@@ -26,6 +27,43 @@ fn get_zip_archive<'a> (url: &str) -> Result<zip::read::ZipArchive<io::Cursor<Ve
     // Extract file with areas
     let zip_cursor = io::Cursor::new(buffer);
     zip::ZipArchive::new (zip_cursor).map_err (error::DownloadError::Zip)
+}
+
+
+pub fn get_streets (filter: fn(&structs::StreetInfo) -> bool) -> Result<Vec<structs::StreetInfo>, error::DownloadError> {
+    let mut zip_archive = try! (get_zip_archive (defines::STREETS_URL));
+
+    // Extract data
+    let file = try! (zip_archive.by_index (0).map_err (error::DownloadError::Zip));
+    let mut file_buffer = BufReader::new (file);
+
+    let mut streets_list: Vec<structs::StreetInfo> = Vec::new();
+    let mut first = true;
+
+    loop {
+        let mut street_str = String::new();
+        match file_buffer.read_line(&mut street_str) {
+            Err(_) => {
+                println! ("Error!");
+                break
+            },
+            Ok (0) => break,
+            Ok (_) => {
+                if first {
+                    first = false;
+                }
+                else {
+                    let street_info = try! (parse_street_info (street_str));
+                    if filter (&street_info) {
+                        streets_list.push(street_info);
+                    }
+                }
+            },
+        }
+    }
+
+    streets_list.sort_by (|a, b| a.cmp (&b));
+    Ok (streets_list)
 }
 
 
@@ -86,8 +124,13 @@ fn remove_type_name (name: &str) -> String {
 }
 
 
-fn sanitize_name (name: String) -> String {
+fn sanitize_area_name (name: String) -> String {
     remove_type_name (&name)
+}
+
+
+fn sanitize_street_name (name: String) -> String {
+    name
 }
 
 
@@ -102,25 +145,48 @@ fn get_type_area (type_id: u32) -> structs::AreaType {
 }
 
 
-/// Create AreaInfo from csv string
-fn parse_area_info (line: String) -> Result<structs::AreaInfo, error::DownloadError> {
+/// Create StreetInfo from csv string
+fn parse_street_info (line: String) -> Result<structs::StreetInfo, error::DownloadError> {
     let items: Vec<&str> = line.split(';').collect();
     let items: Vec<&str> = items.iter().map(|item| item.trim_matches ('"')).collect();
 
-    if items.len() != 8 {
+    if items.len() != 11 {
         return Err (error::DownloadError::FormatError);
     }
 
-    let type_name = get_type_area (try! (items[4].parse::<u32>().map_err (|_| error::DownloadError::FormatError)));
+    // let streetInfo = StreetInfo {
+    //     name: sanitize_street_name (items[2].to_string()),
+    //     areas: try! (items[7].split(';')...)
+    // }
+    unimplemented!();
+}
 
-    let area_info = structs::AreaInfo {
-        name: sanitize_name (items[2].to_string()),
-        id: try! (items[1].parse::<u32>().map_err (|_| error::DownloadError::FormatError)),
-        name_translate: items[3].to_string(),
-        type_name: type_name,
-        id_okato: try! (items[5].parse::<u32>().map_err (|_| error::DownloadError::FormatError)),
-        id_global: try! (items[5].parse::<u32>().map_err (|_| error::DownloadError::FormatError)),
-    };
 
-    Ok(area_info)
+/// Create AreaInfo from csv string
+fn parse_area_info (line: String) -> Result<structs::AreaInfo, error::DownloadError> {
+    let mut csv_reader = csv::Reader::from_string(line).has_headers(false).delimiter(b';');
+
+    for record in csv_reader.decode() {
+        match record {
+            Ok (rec) => {
+                let (_, area_id, name, name_translate, type_id, id_okato, id_global):
+                (u32, u32, String, String, u32, u32, u32) = rec;
+
+                let type_name = get_type_area (type_id);
+
+                let area_info = structs::AreaInfo {
+                    name: sanitize_area_name (name),
+                    id: area_id,
+                    name_translate: name_translate,
+                    type_name: type_name,
+                    id_okato: id_okato,
+                    id_global: id_global,
+                };
+
+                return Ok(area_info)
+            },
+            Err(_) => return Err (error::DownloadError::FormatError),
+        };
+    }
+    Err(error::DownloadError::FormatError)
 }

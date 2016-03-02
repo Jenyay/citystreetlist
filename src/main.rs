@@ -48,6 +48,25 @@ fn print_usage (program: &str, opts: Options) {
 }
 
 
+fn print_streets_for_areas (areas: String) {
+    let areas_list: Vec<String> = areas.split(',').map (|x| x.trim().to_string()).collect();
+
+    print! ("Скачивание списка районов... ");
+    let _ = stdout().flush();
+
+    match mosdata::download_areas() {
+        Err(e) => {
+            println! ("Ошибка!");
+            process_error(e);
+        },
+        Ok (areas) => {
+            println! ("OK");
+            // print_areas (areas);
+        },
+    }
+}
+
+
 fn main () {
     let args: Vec<String> = env::args().collect();
     let program = args[0].clone();
@@ -68,6 +87,13 @@ fn main () {
     }
     else if matches.opt_present("a") {
         download_and_print_areas();
+        return;
+    }
+    else if matches.opt_present("s") {
+        match matches.opt_str("s") {
+            None => print_usage(&program, opts),
+            Some (areas) => print_streets_for_areas (areas),
+        }
         return;
     }
     else {
