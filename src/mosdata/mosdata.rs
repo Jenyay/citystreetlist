@@ -12,7 +12,8 @@ use self::hyper::header::Connection;
 
 use mosdata::error;
 use mosdata::defines;
-use mosdata::structs;
+use mosdata::areainfo;
+use mosdata::streetinfo;
 
 
 /// Download zip archive and return ZipArchive with it
@@ -30,14 +31,14 @@ fn get_zip_archive<'a> (url: &str) -> Result<zip::read::ZipArchive<io::Cursor<Ve
 }
 
 
-pub fn get_streets (filter: fn(&structs::StreetInfo) -> bool) -> Result<Vec<structs::StreetInfo>, error::DownloadError> {
+pub fn get_streets (filter: fn(&streetinfo::StreetInfo) -> bool) -> Result<Vec<streetinfo::StreetInfo>, error::DownloadError> {
     let mut zip_archive = try! (get_zip_archive (defines::STREETS_URL));
 
     // Extract data
     let file = try! (zip_archive.by_index (0).map_err (error::DownloadError::Zip));
     let mut file_buffer = BufReader::new (file);
 
-    let mut streets_list: Vec<structs::StreetInfo> = Vec::new();
+    let mut streets_list: Vec<streetinfo::StreetInfo> = Vec::new();
     let mut first = true;
 
     loop {
@@ -68,7 +69,7 @@ pub fn get_streets (filter: fn(&structs::StreetInfo) -> bool) -> Result<Vec<stru
 
 
 /// Download and extract areas list from data.mos.ru
-pub fn download_areas () -> Result<Vec<structs::AreaInfo>, error::DownloadError> {
+pub fn download_areas () -> Result<Vec<areainfo::AreaInfo>, error::DownloadError> {
     let mut zip_archive = try! (get_zip_archive (defines::AREAS_URL));
 
     // Archive must contain single file only
@@ -76,10 +77,9 @@ pub fn download_areas () -> Result<Vec<structs::AreaInfo>, error::DownloadError>
 
     // Extract data
     let file = try! (zip_archive.by_index (0).map_err (error::DownloadError::Zip));
-
     let mut csv_reader = csv::Reader::from_reader(file).has_headers(true).delimiter(b';');
 
-    let mut areas: Vec<structs::AreaInfo> = Vec::new();
+    let mut areas: Vec<areainfo::AreaInfo> = Vec::new();
 
     for record in csv_reader.decode() {
         match record {
@@ -87,18 +87,7 @@ pub fn download_areas () -> Result<Vec<structs::AreaInfo>, error::DownloadError>
                 let (_, area_id, name, name_translate, type_id, id_okato, id_global):
                     (u32, u32, String, String, u32, u32, u32) = rec;
 
-                let type_name = get_type_area (type_id);
-
-                let area_info = structs::AreaInfo {
-                    name: sanitize_area_name (name),
-                    id: area_id,
-                    name_translate: name_translate,
-                    type_name: type_name,
-                    id_okato: id_okato,
-                    id_global: id_global,
-                };
-
-                areas.push(area_info);
+                areas.push(areainfo::AreaInfo::from_raw_data(area_id, name, name_translate, type_id, id_okato, id_global));
             },
             Err(_) => return Err (error::DownloadError::FormatError),
         };
@@ -109,47 +98,13 @@ pub fn download_areas () -> Result<Vec<structs::AreaInfo>, error::DownloadError>
 }
 
 
-fn remove_type_name (name: &str) -> String {
-    let type_names = vec! ["район", "округ", "поселение"];
-    let mut result = name.trim();
-
-    for type_name in type_names {
-        if result.ends_with (type_name) {
-            result = result[..result.len() - type_name.len()].trim();
-        }
-
-        if result.starts_with (type_name) {
-            result = result[type_name.len()..].trim();
-        }
-    }
-
-    result.to_string()
-}
-
-
-fn sanitize_area_name (name: String) -> String {
-    remove_type_name (&name)
-}
-
-
 fn sanitize_street_name (name: String) -> String {
     name
 }
 
 
-/// Convert area type id to AreaType
-fn get_type_area (type_id: u32) -> structs::AreaType {
-    match type_id {
-        2 => structs::AreaType::Okrug,
-        3 => structs::AreaType::Raion,
-        4 => structs::AreaType::Poselenie,
-        _ => structs::AreaType::Unknown,
-    }
-}
-
-
 /// Create StreetInfo from csv string
-fn parse_street_info (line: String) -> Result<structs::StreetInfo, error::DownloadError> {
+fn parse_street_info (line: String) -> Result<streetinfo::StreetInfo, error::DownloadError> {
     let items: Vec<&str> = line.split(';').collect();
     let items: Vec<&str> = items.iter().map(|item| item.trim_matches ('"')).collect();
 
