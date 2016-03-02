@@ -76,29 +76,32 @@ pub fn download_areas () -> Result<Vec<structs::AreaInfo>, error::DownloadError>
 
     // Extract data
     let file = try! (zip_archive.by_index (0).map_err (error::DownloadError::Zip));
-    let mut file_buffer = BufReader::new (file);
+
+    let mut csv_reader = csv::Reader::from_reader(file).has_headers(true).delimiter(b';');
 
     let mut areas: Vec<structs::AreaInfo> = Vec::new();
-    let mut first = true;
 
-    loop {
-        let mut area_str = String::new();
-        match file_buffer.read_line(&mut area_str) {
-            Err(_) => {
-                println! ("Error!");
-                break
+    for record in csv_reader.decode() {
+        match record {
+            Ok (rec) => {
+                let (_, area_id, name, name_translate, type_id, id_okato, id_global):
+                    (u32, u32, String, String, u32, u32, u32) = rec;
+
+                let type_name = get_type_area (type_id);
+
+                let area_info = structs::AreaInfo {
+                    name: sanitize_area_name (name),
+                    id: area_id,
+                    name_translate: name_translate,
+                    type_name: type_name,
+                    id_okato: id_okato,
+                    id_global: id_global,
+                };
+
+                areas.push(area_info);
             },
-            Ok (0) => break,
-            Ok (_) => {
-                if first {
-                    first = false;
-                }
-                else {
-                    let area_info = try! (parse_area_info (area_str));
-                    areas.push(area_info);
-                }
-            },
-        }
+            Err(_) => return Err (error::DownloadError::FormatError),
+        };
     }
 
     areas.sort_by (|a, b| a.cmp (&b));
@@ -159,34 +162,4 @@ fn parse_street_info (line: String) -> Result<structs::StreetInfo, error::Downlo
     //     areas: try! (items[7].split(';')...)
     // }
     unimplemented!();
-}
-
-
-/// Create AreaInfo from csv string
-fn parse_area_info (line: String) -> Result<structs::AreaInfo, error::DownloadError> {
-    let mut csv_reader = csv::Reader::from_string(line).has_headers(false).delimiter(b';');
-
-    for record in csv_reader.decode() {
-        match record {
-            Ok (rec) => {
-                let (_, area_id, name, name_translate, type_id, id_okato, id_global):
-                (u32, u32, String, String, u32, u32, u32) = rec;
-
-                let type_name = get_type_area (type_id);
-
-                let area_info = structs::AreaInfo {
-                    name: sanitize_area_name (name),
-                    id: area_id,
-                    name_translate: name_translate,
-                    type_name: type_name,
-                    id_okato: id_okato,
-                    id_global: id_global,
-                };
-
-                return Ok(area_info)
-            },
-            Err(_) => return Err (error::DownloadError::FormatError),
-        };
-    }
-    Err(error::DownloadError::FormatError)
 }
