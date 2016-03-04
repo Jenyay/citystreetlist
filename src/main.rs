@@ -100,7 +100,13 @@ fn get_areas_id_list (areas_templates: &Vec<String>, areas_list: &Vec<mosdata::A
             let tpl_lower = template.to_lowercase();
             let tpl_str = &tpl_lower[..];
 
-            if area.name.to_lowercase().starts_with (tpl_str) {
+            if template.starts_with ('"') && template.ends_with ('"') {
+                if &area.name == &template[1..template.len() - 1] {
+                    result.push (area.id);
+                    break;
+                }
+            }
+            else if area.name.to_lowercase().starts_with (tpl_str) {
                 result.push (area.id);
                 break;
             }
