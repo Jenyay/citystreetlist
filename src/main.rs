@@ -26,6 +26,13 @@ fn print_areas (areas: Vec<mosdata::AreaInfo>) {
     }
 }
 
+
+fn print_streets (streets: Vec<mosdata::StreetInfo>) {
+    for street in streets {
+        println! ("{}", street.name);
+    }
+}
+
 fn download_and_print_areas () {
     print! ("Скачивание списка районов... ");
     let _ = stdout().flush();
@@ -48,8 +55,8 @@ fn print_usage (program: &str, opts: Options) {
 }
 
 
-fn print_streets_for_areas (areas: String) {
-    let areas_list: Vec<String> = areas.split(',').map (|x| x.trim().to_string()).collect();
+fn print_streets_for_areas (areas_str: String) {
+    let areas_templates: Vec<String> = areas_str.split(',').map (|x| x.trim().to_string()).collect();
 
     print! ("Скачивание списка районов... ");
     let _ = stdout().flush();
@@ -59,12 +66,47 @@ fn print_streets_for_areas (areas: String) {
             println! ("Ошибка!");
             process_error(e);
         },
-        Ok (areas) => {
+        Ok (areas_list) => {
             println! ("OK");
-            // print_areas (areas);
+            let areas_id = get_areas_id(&areas_templates, &areas_list);
+            let filter = move |street_info: &mosdata::StreetInfo| {
+                true
+            };
+
+            print! ("Скачивание списка улиц... ");
+            let _ = stdout().flush();
+
+            match mosdata::get_streets (filter) {
+                Err(_) => println!("Error!"),
+                Ok (streets_list) => {
+                    print_streets (streets_list);
+                },
+            };
         },
     }
 }
+
+
+fn get_areas_id (areas_templates: &Vec<String>, areas_list: &Vec<mosdata::AreaInfo>) -> Vec<u32> {
+    let mut result: Vec<u32> = Vec::new();
+    for area in areas_list {
+        for template in areas_templates {
+            let tpl_lower = template.to_lowercase();
+            let tpl_str = &tpl_lower[..];
+
+            match area.name.find (tpl_str) {
+                None => {},
+                Some(_) => {
+                    result.push (area.id);
+                    break;
+                }
+            }
+        }
+    }
+
+    result
+}
+
 
 
 fn main () {

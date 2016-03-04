@@ -3,9 +3,7 @@ extern crate zip;
 extern crate csv;
 
 use std::io;
-use std::io::BufReader;
 use std::io::Read;
-use std::io::BufRead;
 
 use self::hyper::Client;
 use self::hyper::header::Connection;
@@ -31,40 +29,37 @@ fn get_zip_archive<'a> (url: &str) -> Result<zip::read::ZipArchive<io::Cursor<Ve
 }
 
 
-pub fn get_streets (filter: fn(&streetinfo::StreetInfo) -> bool) -> Result<Vec<streetinfo::StreetInfo>, error::DownloadError> {
+pub fn get_streets<F> (filter: F) -> Result<Vec<streetinfo::StreetInfo>, error::DownloadError>
+                                     where F: Fn(&streetinfo::StreetInfo) -> bool {
     let mut zip_archive = try! (get_zip_archive (defines::STREETS_URL));
+
+    // Archive must contain one file only
+    assert_eq! (zip_archive.len(), 1);
 
     // Extract data
     let file = try! (zip_archive.by_index (0).map_err (error::DownloadError::Zip));
-    let mut file_buffer = BufReader::new (file);
+    let mut csv_reader = csv::Reader::from_reader(file).has_headers(true).delimiter(b';');
 
-    let mut streets_list: Vec<streetinfo::StreetInfo> = Vec::new();
-    let mut first = true;
+    let mut street_list: Vec<streetinfo::StreetInfo> = Vec::new();
 
-    loop {
-        let mut street_str = String::new();
-        match file_buffer.read_line(&mut street_str) {
-            Err(_) => {
-                println! ("Error!");
-                break
-            },
-            Ok (0) => break,
-            Ok (_) => {
-                if first {
-                    first = false;
-                }
-                else {
-                    let street_info = try! (parse_street_info (street_str));
-                    if filter (&street_info) {
-                        streets_list.push(street_info);
-                    }
+    for record in csv_reader.decode() {
+        match record {
+            Ok (rec) => {
+                let (_, _, name, name_short, name_trans, id_type, _, areas, kladr, global_id):
+                    (u32, u32, String, String, String, u32, String, String, String, u32) = rec;
+
+                let street_info = try! (streetinfo::StreetInfo::from_raw_data(name, name_short, name_trans, id_type, areas, kladr, global_id));
+
+                if filter(&street_info) {
+                    street_list.push(street_info);
                 }
             },
-        }
+            Err(_) => return Err (error::DownloadError::FormatError),
+        };
     }
 
-    streets_list.sort_by (|a, b| a.cmp (&b));
-    Ok (streets_list)
+    street_list.sort_by (|a, b| a.cmp (&b));
+    Ok (street_list)
 }
 
 
@@ -95,26 +90,4 @@ pub fn download_areas () -> Result<Vec<areainfo::AreaInfo>, error::DownloadError
 
     areas.sort_by (|a, b| a.cmp (&b));
     Ok (areas)
-}
-
-
-fn sanitize_street_name (name: String) -> String {
-    name
-}
-
-
-/// Create StreetInfo from csv string
-fn parse_street_info (line: String) -> Result<streetinfo::StreetInfo, error::DownloadError> {
-    let items: Vec<&str> = line.split(';').collect();
-    let items: Vec<&str> = items.iter().map(|item| item.trim_matches ('"')).collect();
-
-    if items.len() != 11 {
-        return Err (error::DownloadError::FormatError);
-    }
-
-    // let streetInfo = StreetInfo {
-    //     name: sanitize_street_name (items[2].to_string()),
-    //     areas: try! (items[7].split(';')...)
-    // }
-    unimplemented!();
 }

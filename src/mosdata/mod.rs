@@ -1,4 +1,4 @@
-pub use self::mosdata::download_areas;
+pub use self::mosdata::{download_areas, get_streets};
 pub use self::streetinfo::{ StreetInfo, };
 pub use self::areainfo::{ AreaInfo, AreaType, };
 
