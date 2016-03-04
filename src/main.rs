@@ -4,6 +4,7 @@ extern crate citystreetlist;
 use std::env;
 use std::io::stdout;
 use std::io::Write;
+use std::collections::HashMap;
 
 use getopts::Options;
 
@@ -27,9 +28,18 @@ fn print_areas (areas: Vec<mosdata::AreaInfo>) {
 }
 
 
-fn print_streets (streets: Vec<mosdata::StreetInfo>) {
-    for street in streets {
-        println! ("{}", street.name);
+fn print_streets (streets: &Vec<mosdata::StreetInfo>,
+                  areas_list: &Vec<u32>,
+                  areas_dict: &HashMap<u32, String>) {
+
+    for area_id in areas_list {
+        println!("");
+        println! ("{}", areas_dict.get (area_id).unwrap());
+        println!("");
+
+        for street in streets {
+            println! ("{}", street.name);
+        }
     }
 }
 
@@ -69,8 +79,9 @@ fn print_streets_for_areas (areas_str: String) {
         Ok (areas_list) => {
             println! ("OK");
             let areas_id_list = get_areas_id_list(&areas_templates, &areas_list);
+            let areas_dict = get_areas_dict (&areas_list);
 
-            let filter = move |street_info: &mosdata::StreetInfo| {
+            let filter = |street_info: &mosdata::StreetInfo| {
                 for street_area_id in &street_info.areas {
                     if areas_id_list.contains (&street_area_id) {
                         return true;
@@ -85,11 +96,22 @@ fn print_streets_for_areas (areas_str: String) {
             match mosdata::get_streets (filter) {
                 Err(_) => println!("Error!"),
                 Ok (streets_list) => {
-                    print_streets (streets_list);
+                    print_streets (&streets_list, &areas_id_list, &areas_dict);
                 },
             };
         },
     }
+}
+
+
+/// Return HashMap where key is area id, value is area name
+fn get_areas_dict (areas_list: &Vec<mosdata::AreaInfo>) -> HashMap<u32, String> {
+    let mut hash = HashMap::new();
+    for area in areas_list {
+        hash.insert(area.id.clone(), area.name.clone());
+    }
+
+    hash
 }
 
 
