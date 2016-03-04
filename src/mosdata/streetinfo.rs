@@ -50,7 +50,7 @@ impl StreetInfo {
                           kladr: String,
                           global_id: u32) -> Result <StreetInfo, error::DownloadError> {
         let street_info = StreetInfo {
-            name: name,
+            name: StreetInfo::sanitize_name (name),
             global_id: global_id,
             areas: try!(StreetInfo::get_areas_list(areas)),
             name_short: name_short,
@@ -60,6 +60,34 @@ impl StreetInfo {
         };
 
         Ok(street_info)
+    }
+
+
+    fn sanitize_name (name: String) -> String {
+        let street_types = vec!["площадь", "улица", "переулок", "шоссе", "набережная",
+            "тупик", "аллея", "проезд", "бульвар", "путепровод", "мост", "эстакада",
+            "проспект", "линия", "тоннель", "просека"];
+
+        let mut result = name;
+        for type_name in street_types {
+            result = StreetInfo::from_start_to_end (&result, &type_name);
+        }
+
+        result
+    }
+
+
+    fn from_start_to_end (name: &str, substring: &str) -> String {
+        if name.to_lowercase().starts_with(&format! ("{} ", substring)) {
+            let left = name[substring.len() + 1..].trim();
+            let mut result = String::from(left);
+            result.push_str(" ");
+            result.push_str(substring);
+            result
+        }
+        else {
+            name.to_string()
+        }
     }
 
 

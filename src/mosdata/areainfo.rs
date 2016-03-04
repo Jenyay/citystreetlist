@@ -85,7 +85,7 @@ impl AreaInfo {
         let type_name = AreaType::from_id (type_id);
 
         AreaInfo {
-            name: AreaInfo::sanitize_area_name (name),
+            name: AreaInfo::sanitize_name (name),
             id: area_id,
             name_translate: name_translate,
             type_name: type_name,
@@ -95,7 +95,7 @@ impl AreaInfo {
     }
 
 
-    fn sanitize_area_name (name: String) -> String {
+    fn sanitize_name (name: String) -> String {
         AreaInfo::remove_type_name (&name)
     }
 

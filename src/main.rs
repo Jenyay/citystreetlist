@@ -38,7 +38,9 @@ fn print_streets (streets: &Vec<mosdata::StreetInfo>,
         println!("");
 
         for street in streets {
-            println! ("{}", street.name);
+            if street.areas.contains (area_id) {
+                println! ("{}", street.name)
+            }
         }
     }
 }
