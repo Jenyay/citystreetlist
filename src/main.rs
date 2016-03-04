@@ -68,12 +68,18 @@ fn print_streets_for_areas (areas_str: String) {
         },
         Ok (areas_list) => {
             println! ("OK");
-            let areas_id = get_areas_id(&areas_templates, &areas_list);
+            let areas_id_list = get_areas_id_list(&areas_templates, &areas_list);
+
             let filter = move |street_info: &mosdata::StreetInfo| {
-                true
+                for street_area_id in &street_info.areas {
+                    if areas_id_list.contains (&street_area_id) {
+                        return true;
+                    }
+                }
+                false
             };
 
-            print! ("Скачивание списка улиц... ");
+            println! ("Скачивание списка улиц... ");
             let _ = stdout().flush();
 
             match mosdata::get_streets (filter) {
@@ -87,19 +93,16 @@ fn print_streets_for_areas (areas_str: String) {
 }
 
 
-fn get_areas_id (areas_templates: &Vec<String>, areas_list: &Vec<mosdata::AreaInfo>) -> Vec<u32> {
+fn get_areas_id_list (areas_templates: &Vec<String>, areas_list: &Vec<mosdata::AreaInfo>) -> Vec<u32> {
     let mut result: Vec<u32> = Vec::new();
     for area in areas_list {
         for template in areas_templates {
             let tpl_lower = template.to_lowercase();
             let tpl_str = &tpl_lower[..];
 
-            match area.name.find (tpl_str) {
-                None => {},
-                Some(_) => {
-                    result.push (area.id);
-                    break;
-                }
+            if area.name.to_lowercase().starts_with (tpl_str) {
+                result.push (area.id);
+                break;
             }
         }
     }
