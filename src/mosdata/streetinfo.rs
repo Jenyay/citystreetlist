@@ -48,7 +48,7 @@ impl StreetInfo {
                           type_id: u32,
                           areas: String,
                           kladr: String,
-                          global_id: u32) -> Result <StreetInfo, error::DownloadError> {
+                          global_id: u32) -> error::Result <StreetInfo> {
         let street_info = StreetInfo {
             name: StreetInfo::sanitize_name (name),
             global_id: global_id,
@@ -91,7 +91,7 @@ impl StreetInfo {
     }
 
 
-    fn get_areas_list (areas_str: String) -> Result<Vec<u32>, error::DownloadError> {
+    fn get_areas_list (areas_str: String) -> error::Result<Vec<u32>> {
         let areas_list_str: Vec<&str> = areas_str.split(';').collect();
         let mut areas_id: Vec<u32> = Vec::new();
 

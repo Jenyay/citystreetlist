@@ -29,7 +29,7 @@ fn get_zip_archive<'a> (url: &str) -> Result<zip::read::ZipArchive<io::Cursor<Ve
 }
 
 
-pub fn get_streets<F> (filter: F) -> Result<Vec<streetinfo::StreetInfo>, error::DownloadError>
+pub fn get_streets<F> (filter: F) -> error::Result<Vec<streetinfo::StreetInfo>>
                                      where F: Fn(&streetinfo::StreetInfo) -> bool {
     let mut zip_archive = try! (get_zip_archive (defines::STREETS_URL));
 
@@ -64,7 +64,7 @@ pub fn get_streets<F> (filter: F) -> Result<Vec<streetinfo::StreetInfo>, error::
 
 
 /// Download and extract areas list from data.mos.ru
-pub fn download_areas () -> Result<Vec<areainfo::AreaInfo>, error::DownloadError> {
+pub fn download_areas () -> error::Result<Vec<areainfo::AreaInfo>> {
     let mut zip_archive = try! (get_zip_archive (defines::AREAS_URL));
 
     // Archive must contain single file only

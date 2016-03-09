@@ -7,6 +7,7 @@ use std::io;
 use std::fmt;
 use std::error;
 use std::convert;
+use std::result;
 
 
 #[derive(Debug)]
@@ -16,6 +17,9 @@ pub enum DownloadError {
     Zip (zip::result::ZipError),
     FormatError,
 }
+
+
+pub type Result<T> = result::Result<T, DownloadError>;
 
 
 impl convert::From<hyper::error::Error> for DownloadError {
