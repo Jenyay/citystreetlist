@@ -19,9 +19,9 @@ fn get_zip_archive<'a> (url: &str) -> Result<zip::read::ZipArchive<io::Cursor<Ve
     // Download zip file with areas
     let client = Client::new();
 
-    let mut response = try! (client.get (url).header (Connection::close()).send().map_err (error::DownloadError::HttpError));
+    let mut response = try! (client.get (url).header (Connection::close()).send());
     let mut buffer: Vec<u8> = Vec::new();
-    try! (response.read_to_end(&mut buffer).map_err (error::DownloadError::Io));
+    try! (response.read_to_end(&mut buffer));
 
     // Extract file with areas
     let zip_cursor = io::Cursor::new(buffer);
@@ -37,7 +37,7 @@ pub fn get_streets<F> (filter: F) -> Result<Vec<streetinfo::StreetInfo>, error::
     assert_eq! (zip_archive.len(), 1);
 
     // Extract data
-    let file = try! (zip_archive.by_index (0).map_err (error::DownloadError::Zip));
+    let file = try! (zip_archive.by_index (0));
     let mut csv_reader = csv::Reader::from_reader(file).has_headers(true).delimiter(b';');
 
     let mut street_list: Vec<streetinfo::StreetInfo> = Vec::new();
@@ -71,7 +71,7 @@ pub fn download_areas () -> Result<Vec<areainfo::AreaInfo>, error::DownloadError
     assert_eq! (zip_archive.len(), 1);
 
     // Extract data
-    let file = try! (zip_archive.by_index (0).map_err (error::DownloadError::Zip));
+    let file = try! (zip_archive.by_index (0));
     let mut csv_reader = csv::Reader::from_reader(file).has_headers(true).delimiter(b';');
 
     let mut areas: Vec<areainfo::AreaInfo> = Vec::new();
