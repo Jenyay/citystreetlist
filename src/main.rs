@@ -75,7 +75,6 @@ fn print_streets_for_areas (areas_str: String) {
 
     match mosdata::download_areas() {
         Err(e) => {
-            println! ("Ошибка!");
             process_error(e);
         },
         Ok (areas_list) => {
@@ -96,7 +95,9 @@ fn print_streets_for_areas (areas_str: String) {
             let _ = stdout().flush();
 
             match mosdata::get_streets (filter) {
-                Err(_) => println!("Error!"),
+                Err(e) => {
+                    process_error(e);
+                },
                 Ok (streets_list) => {
                     print_streets (&streets_list, &areas_id_list, &areas_dict);
                 },

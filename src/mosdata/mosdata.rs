@@ -45,8 +45,10 @@ pub fn get_streets<F> (filter: F) -> error::Result<Vec<streetinfo::StreetInfo>>
     for record in csv_reader.decode() {
         match record {
             Ok (rec) => {
-                let (_, _, name, name_short, name_trans, id_type, _, areas, kladr, global_id):
-                    (u32, u32, String, String, String, u32, String, String, String, u32) = rec;
+                // let (_, _, name, name_short, name_trans, id_type, _, areas, kladr, global_id):
+                //     (u32, u32, String, String, String, u32, String, String, String, u32) = rec;
+                let (_, global_id, _, kladr, name_short, name_trans, id_type, _, areas, name):
+                    (u32, u32, u32, String, String, String, u32, String, String, String) = rec;
 
                 let street_info = try! (streetinfo::StreetInfo::from_raw_data(name, name_short, name_trans, id_type, areas, kladr, global_id));
 
@@ -54,7 +56,10 @@ pub fn get_streets<F> (filter: F) -> error::Result<Vec<streetinfo::StreetInfo>>
                     street_list.push(street_info);
                 }
             },
-            Err(_) => return Err (error::DownloadError::FormatError),
+            Err(e) => {
+                println!("{:?}", e);
+                return Err (error::DownloadError::FormatError)
+            },
         };
     }
 
